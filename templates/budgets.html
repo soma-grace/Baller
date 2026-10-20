@@ -11,7 +11,7 @@
         <p class="muted">Give your money a plan before it disappears.</p>
     </div>
     <button type="button" class="btn btn-primary"
-            onclick="document.getElementById('budget-form').hidden = false">
+            data-open-budget>
         + Set budget
     </button>
 </section>
@@ -19,30 +19,21 @@
 <section class="panel budget-form-panel" id="budget-form" hidden>
     <div class="panel-heading">
         <div>
-            <h2>Create a budget</h2>
+            <h2 id="budget-form-title">Create a budget</h2>
             <p class="muted">Set a spending limit for the month.</p>
         </div>
         <button type="button" class="icon-button"
                 aria-label="Close form"
-                onclick="document.getElementById('budget-form').hidden = true">
+                data-close-budget>
             ×
         </button>
     </div>
 
-    <form action="/budgets" method="post" class="form-stack">
+    <form action="/budgets" method="post" class="form-stack" id="budget-form-fields">
         <div class="form-group">
-            <label for="budget-name">Budget type</label>
-            <select id="budget-name" name="budget_type" required
-                    onchange="this.form.elements.category.required = this.value === 'category'">
-                <option value="overall">Overall monthly budget</option>
-                <option value="category">Category budget</option>
-            </select>
-        </div>
-
-        <div class="form-group">
-            <label for="budget-category">Category (for category budgets)</label>
+            <label for="budget-category">Category</label>
             <select id="budget-category" name="category">
-                <option value="">No category selected</option>
+                <option value="">All categories</option>
                 <option value="food">Food</option>
                 <option value="shopping">Shopping</option>
                 <option value="transport">Transport</option>
@@ -68,20 +59,23 @@
         </div>
 
         <button type="submit" class="btn btn-primary">
-            Save budget
+            <span id="budget-submit-label">Save budget</span>
+        </button>
+        <button type="button" class="btn btn-secondary" id="cancel-budget-edit" hidden>
+            Cancel edit
         </button>
     </form>
 </section>
 
 <section class="summary-grid">
     <article class="summary-card featured-card">
-        <p class="card-label">Monthly budget</p>
+        <p class="card-label">Overall monthly budget</p>
         <h2>₦{{ budget_amount|money }}</h2>
         <p class="card-foot">Your total spending limit</p>
     </article>
 
     <article class="summary-card">
-        <p class="card-label">Amount spent</p>
+        <p class="card-label">Amount spent this month</p>
         <h2>₦{{ spent|money }}</h2>
         <p class="card-foot">Recorded this month</p>
     </article>
@@ -89,7 +83,7 @@
     <article class="summary-card">
         <p class="card-label">Remaining</p>
         <h2>₦{{ remaining|money }}</h2>
-        <p class="card-foot">Available within your budget</p>
+        <p class="card-foot">Available within your overall budget</p>
     </article>
 </section>
 
@@ -104,58 +98,37 @@
             {% elif spent > budget_amount %}Over budget
             {% else %}On track{% endif %}
         </span>
+        {% if overall_budget %}
+        <button type="button" class="btn btn-secondary"
+                data-edit-budget
+                data-budget-id="{{ overall_budget.id }}"
+                data-category="{{ overall_budget.category or '' }}"
+                data-amount="{{ overall_budget.amount }}"
+                data-month="{{ selected_month }}">
+            Edit budget
+        </button>
+        {% endif %}
     </div>
 
+    {% if overall_budget %}
     <div class="budget-numbers">
         <span>₦{{ spent|money }} spent</span>
         <strong>₦{{ budget_amount|money }} budget</strong>
     </div>
 
     <div class="progress-track">
-        <div class="progress-fill {% if budget_amount and spent > budget_amount %}danger{% elif budget_amount and spent / budget_amount >= 0.8 %}warning{% endif %}"
-             style="width: {{ [((spent / budget_amount * 100) if budget_amount else 0), 100]|min }}%"></div>
+        <div class="progress-fill {% if budget_amount and spent > budget_amount %}danger{% elif budget_amount and overall_progress >= 80 %}warning{% endif %}"
+             data-progress="{{ overall_progress }}"></div>
     </div>
 
     <p class="muted">
-        {% if overall_budget %}Progress for {{ selected_month }}.
-        {% else %}Create an overall budget to start tracking progress.{% endif %}
+        Progress for {{ selected_month }}.
     </p>
-</section>
-
-<section class="panel">
-    <div class="panel-heading">
-        <div>
-            <h2>Category budgets</h2>
-            <p class="muted">Set limits for the things you spend on.</p>
-        </div>
-    </div>
-
-    {% if category_budgets %}
-    <div class="budget-list">
-        {% for budget in category_budgets %}
-        {% set category_spent = category_spending.get(budget.category, 0) %}
-        <article class="budget-overview">
-            <div class="budget-numbers">
-                <span>{{ budget.category|title }} · ₦{{ category_spent|money }} spent</span>
-                <strong>₦{{ budget.amount|money }}</strong>
-            </div>
-            <div class="progress-track">
-                <div class="progress-fill {% if budget.amount and category_spent > budget.amount %}danger{% elif budget.amount and category_spent / budget.amount >= 0.8 %}warning{% endif %}"
-                     style="width: {{ [((category_spent / budget.amount * 100) if budget.amount else 0), 100]|min }}%"></div>
-            </div>
-        </article>
-        {% endfor %}
-    </div>
     {% else %}
-    <div class="empty-state">
-        <div class="empty-icon">◎</div>
-        <h3>No category budgets yet</h3>
-        <p>Create category budgets to understand where you can cut back.</p>
-        <button type="button" class="btn btn-secondary"
-                onclick="document.getElementById('budget-form').hidden = false">
-            Create a budget
-        </button>
-    </div>
+    <p class="muted">
+        Set an overall budget to compare against all expenses.
+    </p>
     {% endif %}
 </section>
+
 {% endblock %}

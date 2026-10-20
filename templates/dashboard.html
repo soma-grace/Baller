@@ -35,11 +35,6 @@
         <p class="card-foot">Your monthly total</p>
     </article>
 
-    <article class="summary-card">
-        <p class="card-label">Wants this month</p>
-        <h2>₦{{ wants_month|money }}</h2>
-        <p class="card-foot">Optional spending</p>
-    </article>
 </section>
 
 <section class="dashboard-grid">
@@ -90,7 +85,7 @@
 
         <div class="budget-overview">
             <div class="budget-numbers">
-                <span>{% if uses_category_budgets %}Budgeted categories{% else %}Monthly budget{% endif %}</span>
+                <span>Monthly budget</span>
                 <strong>₦{{ budgeted_spend|money }} / ₦{{ monthly_budget|money }}</strong>
             </div>
             <div class="progress-track">
@@ -98,7 +93,7 @@
                      data-progress="{{ "%.1f"|format(budget_bar_width) }}"></div>
             </div>
             <p class="muted">
-                {% if has_budget %}{{ "%.1f"|format(budget_progress) }}% of your {% if uses_category_budgets %}category budgets{% else %}monthly budget{% endif %} used.{% else %}Create a budget to track your progress.{% endif %}
+                {% if has_overall_budget %}{{ "%.1f"|format(budget_progress) }}% of your overall monthly budget used.{% else %}Set an overall monthly budget to track all your spending here. {% endif %}
             </p>
         </div>
 

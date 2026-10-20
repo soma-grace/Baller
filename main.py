@@ -234,14 +234,6 @@ def dashboard_page(request: Request, db: Session = Depends(get_db)):
     month_total = sum(
         (expense.amount for expense in month_expenses), Decimal("0")
     )
-    wants_total = sum(
-        (
-            expense.amount
-            for expense in month_expenses
-            if expense.expense_type == "want"
-        ),
-        Decimal("0"),
-    )
     category_totals = {
         category: sum(
             (
@@ -276,45 +268,19 @@ def dashboard_page(request: Request, db: Session = Depends(get_db)):
             }
         )
 
-    budgets = (
+    overall_budget = (
         db.query(Budget)
         .filter(
             Budget.user_id == user_id,
+            Budget.budget_type == "overall",
             Budget.month == month_start,
         )
-        .all()
+        .first()
         if user_id is not None
-        else []
+        else None
     )
-    overall_budget = next(
-        (budget for budget in budgets if budget.budget_type == "overall"),
-        None,
-    )
-    category_budgets = [
-        budget for budget in budgets if budget.budget_type == "category"
-    ]
-    if overall_budget:
-        budget_amount = overall_budget.amount
-        budgeted_categories = None
-    else:
-        budget_amount = sum(
-            (budget.amount for budget in category_budgets),
-            Decimal("0"),
-        )
-        budgeted_categories = {budget.category for budget in category_budgets}
-
-    budgeted_spend = (
-        month_total
-        if budgeted_categories is None
-        else sum(
-            (
-                expense.amount
-                for expense in month_expenses
-                if expense.category in budgeted_categories
-            ),
-            Decimal("0"),
-        )
-    )
+    budget_amount = overall_budget.amount if overall_budget else Decimal("0")
+    budgeted_spend = month_total if overall_budget else Decimal("0")
     recent_expenses = sorted(
         expenses,
         key=lambda expense: (expense.expense_date, expense.id),
@@ -334,7 +300,7 @@ def dashboard_page(request: Request, db: Session = Depends(get_db)):
             "spent_week": week_total,
             "spent_month": month_total,
             "budgeted_spend": budgeted_spend,
-            "wants_month": wants_total,
+            "has_overall_budget": overall_budget is not None,
             "category_segments": category_segments,
             "chart_segments": [
                 {
@@ -347,8 +313,6 @@ def dashboard_page(request: Request, db: Session = Depends(get_db)):
             "monthly_budget": budget_amount,
             "budget_progress": budget_progress,
             "budget_bar_width": budget_bar_width,
-            "has_budget": overall_budget is not None or bool(category_budgets),
-            "uses_category_budgets": overall_budget is None and bool(category_budgets),
             "recent_expenses": recent_expenses,
         },
     )
@@ -359,7 +323,7 @@ def add_expense_page(request: Request):
     return templates.TemplateResponse(
         request=request,
         name="add_expenses.html",
-        context={}
+        context={"today": date.today().isoformat()}
     )
 
 
@@ -376,6 +340,11 @@ def add_expense_submit(
     user_id = current_user_id(request, db)
     if user_id is None:
         return RedirectResponse(url="/login", status_code=303)
+    if spent_at > date.today():
+        raise HTTPException(
+            status_code=400,
+            detail="Expenses cannot be dated in the future.",
+        )
     amount_value = parse_money_amount(amount)
     if category not in EXPENSE_CATEGORIES:
         raise HTTPException(status_code=400, detail="Choose a valid expense category.")
@@ -401,10 +370,27 @@ def transactions_page(
     search: str = "",
     category: str = "",
     expense_type: str = "",
-    start_date: date | None = None,
-    end_date: date | None = None,
+    start_date: str | None = None,
+    end_date: str | None = None,
     db: Session = Depends(get_db),
 ):
+    try:
+        start_date_value = (
+            date.fromisoformat(start_date.strip())
+            if start_date and start_date.strip()
+            else None
+        )
+        end_date_value = (
+            date.fromisoformat(end_date.strip())
+            if end_date and end_date.strip()
+            else None
+        )
+    except ValueError as error:
+        raise HTTPException(
+            status_code=400,
+            detail="Enter valid start and end dates.",
+        ) from error
+
     user_id = current_user_id(request, db)
     query = db.query(Expense)
     if user_id is None:
@@ -413,14 +399,27 @@ def transactions_page(
         query = query.filter(Expense.user_id == user_id)
     if search.strip():
         query = query.filter(Expense.note.ilike(f"%{search.strip()}%"))
-    if category in EXPENSE_CATEGORIES:
+    if category and category not in EXPENSE_CATEGORIES:
+        raise HTTPException(status_code=400, detail="Choose a valid category filter.")
+    if category:
         query = query.filter(Expense.category == category)
-    if expense_type in ("need", "want"):
+    if expense_type and expense_type not in ("need", "want"):
+        raise HTTPException(status_code=400, detail="Choose a valid type filter.")
+    if expense_type:
         query = query.filter(Expense.expense_type == expense_type)
-    if start_date:
-        query = query.filter(Expense.expense_date >= start_date)
-    if end_date:
-        query = query.filter(Expense.expense_date <= end_date)
+    if (
+        start_date_value
+        and end_date_value
+        and start_date_value > end_date_value
+    ):
+        raise HTTPException(
+            status_code=400,
+            detail="The start date must be on or before the end date.",
+        )
+    if start_date_value:
+        query = query.filter(Expense.expense_date >= start_date_value)
+    if end_date_value:
+        query = query.filter(Expense.expense_date <= end_date_value)
 
     expenses = query.order_by(
         Expense.expense_date.desc(), Expense.id.desc()
@@ -433,8 +432,8 @@ def transactions_page(
             "search": search,
             "category": category,
             "expense_type": expense_type,
-            "start_date": start_date,
-            "end_date": end_date,
+            "start_date": start_date_value,
+            "end_date": end_date_value,
         },
     )
 
@@ -478,38 +477,13 @@ def budgets_page(
         (budget for budget in budgets if budget.budget_type == "overall"),
         None,
     )
-    category_budgets = [
-        budget for budget in budgets if budget.budget_type == "category"
-    ]
-    spent = sum((expense.amount for expense in expenses), Decimal("0"))
-    if overall_budget:
-        budget_amount = overall_budget.amount
-        tracked_spent = spent
-    else:
-        budget_amount = sum(
-            (budget.amount for budget in category_budgets),
-            Decimal("0"),
-        )
-        budgeted_categories = {budget.category for budget in category_budgets}
-        tracked_spent = sum(
-            (
-                expense.amount
-                for expense in expenses
-                if expense.category in budgeted_categories
-            ),
-            Decimal("0"),
-        )
-    category_spending = {
-        category: sum(
-            (
-                expense.amount
-                for expense in expenses
-                if expense.category == category
-            ),
-            Decimal("0"),
-        )
-        for category in EXPENSE_CATEGORIES
-    }
+    budget_amount = overall_budget.amount if overall_budget else Decimal("0")
+    tracked_spent = sum((expense.amount for expense in expenses), Decimal("0"))
+    overall_progress = (
+        tracked_spent * 100 / budget_amount
+        if budget_amount > 0
+        else Decimal("0")
+    )
     return templates.TemplateResponse(
         request=request,
         name="budgets.html",
@@ -518,9 +492,8 @@ def budgets_page(
             "budget_amount": budget_amount,
             "spent": tracked_spent,
             "remaining": budget_amount - tracked_spent,
+            "overall_progress": overall_progress,
             "overall_budget": overall_budget,
-            "category_budgets": category_budgets,
-            "category_spending": category_spending,
         },
     )
 
@@ -528,7 +501,6 @@ def budgets_page(
 @app.post("/budgets")
 def budget_submit(
     request: Request,
-    budget_type: str = Form(...),
     category: str = Form(""),
     amount: str = Form(...),
     month: str = Form(...),
@@ -537,36 +509,30 @@ def budget_submit(
     user_id = current_user_id(request, db)
     if user_id is None:
         return RedirectResponse(url="/login", status_code=303)
-    if budget_type not in ("overall", "category"):
-        raise HTTPException(status_code=400, detail="Choose a valid budget type.")
+    if category and category not in EXPENSE_CATEGORIES:
+        raise HTTPException(status_code=400, detail="Choose a valid category.")
     amount_value = parse_money_amount(amount)
-    if budget_type == "category" and category not in EXPENSE_CATEGORIES:
-        raise HTTPException(
-            status_code=400,
-            detail="Choose a category for a category budget.",
-        )
 
     try:
         month_start = datetime.strptime(month, "%Y-%m").date().replace(day=1)
     except ValueError:
         raise HTTPException(status_code=400, detail="Choose a valid month.")
 
-    budget_category = category if budget_type == "category" else None
-    budget_query = db.query(Budget).filter(
-        Budget.user_id == user_id,
-        Budget.budget_type == budget_type,
-        Budget.month == month_start,
+    budget_category = category or None
+    budget = (
+        db.query(Budget)
+        .filter(
+            Budget.user_id == user_id,
+            Budget.budget_type == "overall",
+            Budget.month == month_start,
+        )
+        .first()
     )
-    if budget_category is None:
-        budget_query = budget_query.filter(Budget.category.is_(None))
-    else:
-        budget_query = budget_query.filter(Budget.category == budget_category)
-    budget = budget_query.first()
 
     if budget is None:
         budget = Budget(
             user_id=user_id,
-            budget_type=budget_type,
+            budget_type="overall",
             category=budget_category,
             amount=amount_value,
             month=month_start,
@@ -574,7 +540,66 @@ def budget_submit(
         db.add(budget)
     else:
         budget.amount = amount_value
+        budget.category = budget_category
 
+    db.commit()
+    return RedirectResponse(
+        url=f"/budgets?month={month_start:%Y-%m}",
+        status_code=303,
+    )
+
+
+@app.post("/budgets/{budget_id}/edit")
+def budget_edit(
+    budget_id: int,
+    request: Request,
+    category: str = Form(""),
+    amount: str = Form(...),
+    month: str = Form(...),
+    db: Session = Depends(get_db),
+):
+    user_id = current_user_id(request, db)
+    if user_id is None:
+        return RedirectResponse(url="/login", status_code=303)
+
+    budget = (
+        db.query(Budget)
+        .filter(Budget.id == budget_id, Budget.user_id == user_id)
+        .first()
+    )
+    if budget is None:
+        raise HTTPException(status_code=404, detail="Budget not found.")
+    if category and category not in EXPENSE_CATEGORIES:
+        raise HTTPException(status_code=400, detail="Choose a valid category.")
+
+    amount_value = parse_money_amount(amount)
+
+    try:
+        month_start = datetime.strptime(month, "%Y-%m").date().replace(day=1)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Choose a valid month.")
+
+    budget_category = category or None
+    duplicate = (
+        db.query(Budget)
+        .filter(
+            Budget.user_id == user_id,
+            Budget.budget_type == "overall",
+            Budget.month == month_start,
+            Budget.id != budget.id,
+        )
+        .first()
+    )
+    if duplicate is not None:
+        raise HTTPException(
+            status_code=400,
+            detail="A budget already exists for this month.",
+        )
+
+    budget.budget_type = "overall"
+    budget.category = budget_category
+    budget.amount = amount_value
+    budget.month = month_start
     db.commit()
     return RedirectResponse(
         url=f"/budgets?month={month_start:%Y-%m}",
