@@ -36,3 +36,15 @@ class Expense(Base):
     note = Column(Text, nullable=True)
     expense_date = Column(Date, default=date.today, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+
+class Budget(Base):
+    __tablename__ = "budgets"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    budget_type = Column(String(20), nullable=False)
+    category = Column(String(100), nullable=True)
+    amount = Column(Numeric(12, 2), nullable=False)
+    month = Column(Date, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)

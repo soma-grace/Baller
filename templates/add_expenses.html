@@ -15,7 +15,7 @@
     </div>
 
     <div class="panel expense-form-panel">
-        <form action="#" method="post" class="form-stack">
+        <form action="/add-expense" method="post" class="form-stack">
 
             <div class="form-group">
                 <label for="amount">How much did you spend?</label>
@@ -48,21 +48,15 @@
                     <label class="choice-card">
                         <input type="radio" name="expense_type"
                                value="need" required>
-                        <span class="choice-icon">✓</span>
-                        <span>
                             <strong>A need</strong>
                             <small>Something essential</small>
-                        </span>
                     </label>
 
                     <label class="choice-card">
                         <input type="radio" name="expense_type"
                                value="want" required>
-                        <span class="choice-icon">♡</span>
-                        <span>
                             <strong>A want</strong>
                             <small>Something optional</small>
-                        </span>
                     </label>
                 </div>
             </div>

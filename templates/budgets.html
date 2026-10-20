@@ -29,10 +29,11 @@
         </button>
     </div>
 
-    <form action="#" method="post" class="form-stack">
+    <form action="/budgets" method="post" class="form-stack">
         <div class="form-group">
             <label for="budget-name">Budget type</label>
-            <select id="budget-name" name="budget_type" required>
+            <select id="budget-name" name="budget_type" required
+                    onchange="this.form.elements.category.required = this.value === 'category'">
                 <option value="overall">Overall monthly budget</option>
                 <option value="category">Category budget</option>
             </select>
@@ -61,7 +62,8 @@
 
         <div class="form-group">
             <label for="budget-month">Month</label>
-            <input type="month" id="budget-month" name="month" required>
+            <input type="month" id="budget-month" name="month"
+                   value="{{ selected_month }}" required>
         </div>
 
         <button type="submit" class="btn btn-primary">
@@ -73,19 +75,19 @@
 <section class="summary-grid">
     <article class="summary-card featured-card">
         <p class="card-label">Monthly budget</p>
-        <h2>₦0.00</h2>
+        <h2>₦{{ "%.2f"|format(budget_amount) }}</h2>
         <p class="card-foot">Your total spending limit</p>
     </article>
 
     <article class="summary-card">
         <p class="card-label">Amount spent</p>
-        <h2>₦0.00</h2>
+        <h2>₦{{ "%.2f"|format(spent) }}</h2>
         <p class="card-foot">Recorded this month</p>
     </article>
 
     <article class="summary-card">
         <p class="card-label">Remaining</p>
-        <h2>₦0.00</h2>
+        <h2>₦{{ "%.2f"|format(remaining) }}</h2>
         <p class="card-foot">Available within your budget</p>
     </article>
 </section>
@@ -96,19 +98,27 @@
             <h2>Overall budget progress</h2>
             <p class="muted">Your total monthly spending limit</p>
         </div>
-        <span class="status-pill">Not set</span>
+        <span class="status-pill {% if overall_budget and spent > budget_amount %}danger{% endif %}">
+            {% if not overall_budget %}Not set
+            {% elif spent > budget_amount %}Over budget
+            {% else %}On track{% endif %}
+        </span>
     </div>
 
     <div class="budget-numbers">
-        <span>₦0 spent</span>
-        <strong>₦0 budget</strong>
+        <span>₦{{ "%.2f"|format(spent) }} spent</span>
+        <strong>₦{{ "%.2f"|format(budget_amount) }} budget</strong>
     </div>
 
     <div class="progress-track">
-        <div class="progress-fill" style="width: 0%"></div>
+        <div class="progress-fill {% if budget_amount and spent > budget_amount %}danger{% endif %}"
+             style="width: {{ [((spent / budget_amount * 100) if budget_amount else 0), 100]|min }}%"></div>
     </div>
 
-    <p class="muted">Create your first budget to start tracking progress.</p>
+    <p class="muted">
+        {% if overall_budget %}Progress for {{ selected_month }}.
+        {% else %}Create an overall budget to start tracking progress.{% endif %}
+    </p>
 </section>
 
 <section class="panel">
@@ -119,6 +129,23 @@
         </div>
     </div>
 
+    {% if category_budgets %}
+    <div class="budget-list">
+        {% for budget in category_budgets %}
+        {% set category_spent = category_spending.get(budget.category, 0) %}
+        <article class="budget-overview">
+            <div class="budget-numbers">
+                <span>{{ budget.category|title }} · ₦{{ "%.2f"|format(category_spent) }} spent</span>
+                <strong>₦{{ "%.2f"|format(budget.amount) }}</strong>
+            </div>
+            <div class="progress-track">
+                <div class="progress-fill {% if budget.amount and category_spent > budget.amount %}danger{% elif budget.amount and category_spent / budget.amount >= 0.8 %}warning{% endif %}"
+                     style="width: {{ [((category_spent / budget.amount * 100) if budget.amount else 0), 100]|min }}%"></div>
+            </div>
+        </article>
+        {% endfor %}
+    </div>
+    {% else %}
     <div class="empty-state">
         <div class="empty-icon">◎</div>
         <h3>No category budgets yet</h3>
@@ -128,5 +155,6 @@
             Create a budget
         </button>
     </div>
+    {% endif %}
 </section>
 {% endblock %}

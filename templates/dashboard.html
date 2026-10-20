@@ -19,25 +19,25 @@
 <section class="summary-grid">
     <article class="summary-card">
         <p class="card-label">Spent today</p>
-        <h2>₦0.00</h2>
+        <h2>₦{{ "%.2f"|format(spent_today) }}</h2>
         <p class="card-foot">Your spending so far today</p>
     </article>
 
     <article class="summary-card">
         <p class="card-label">Spent this week</p>
-        <h2>₦0.00</h2>
+        <h2>₦{{ "%.2f"|format(spent_week) }}</h2>
         <p class="card-foot">Your weekly total</p>
     </article>
 
     <article class="summary-card featured-card">
         <p class="card-label">Spent this month</p>
-        <h2>₦0.00</h2>
+        <h2>₦{{ "%.2f"|format(spent_month) }}</h2>
         <p class="card-foot">Your monthly total</p>
     </article>
 
     <article class="summary-card">
         <p class="card-label">Wants this month</p>
-        <h2>₦0.00</h2>
+        <h2>₦{{ "%.2f"|format(wants_month) }}</h2>
         <p class="card-foot">Optional spending</p>
     </article>
 </section>
@@ -78,12 +78,15 @@
         <div class="budget-overview">
             <div class="budget-numbers">
                 <span>Monthly budget</span>
-                <strong>₦0 / ₦0</strong>
+                <strong>₦{{ "%.2f"|format(spent_month) }} / ₦{{ "%.2f"|format(monthly_budget) }}</strong>
             </div>
             <div class="progress-track">
-                <div class="progress-fill" style="width: 0%"></div>
+                <div class="progress-fill {% if monthly_budget and spent_month > monthly_budget %}danger{% endif %}"
+                     style="width: {{ [((spent_month / monthly_budget * 100) if monthly_budget else 0), 100]|min }}%"></div>
             </div>
-            <p class="muted">Create a budget to track your progress.</p>
+            <p class="muted">
+                {% if monthly_budget %}Your monthly spending progress.{% else %}Create a budget to track your progress.{% endif %}
+            </p>
         </div>
 
         <div class="insight-box">
@@ -105,6 +108,25 @@
         <a href="/transactions" class="text-link">View all</a>
     </div>
 
+    {% if recent_expenses %}
+    <div class="table-scroll">
+        <table class="transaction-table">
+            <thead>
+                <tr><th>Expense</th><th>Category</th><th>Date</th><th>Amount</th></tr>
+            </thead>
+            <tbody>
+                {% for expense in recent_expenses %}
+                <tr>
+                    <td>{{ expense.note or "Expense" }}</td>
+                    <td>{{ expense.category|title }}</td>
+                    <td>{{ expense.expense_date }}</td>
+                    <td class="amount-cell">₦{{ "%.2f"|format(expense.amount) }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
     <div class="empty-state">
         <div class="empty-icon">₦</div>
         <h3>No transactions yet</h3>
@@ -113,5 +135,6 @@
             Add your first expense
         </a>
     </div>
+    {% endif %}
 </section>
 {% endblock %}
