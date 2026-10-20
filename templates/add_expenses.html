@@ -21,9 +21,10 @@
                 <label for="amount">How much did you spend?</label>
                 <div class="amount-input">
                     <span>₦</span>
-                    <input type="number" id="amount" name="amount"
-                           placeholder="0.00" min="0.01"
-                           step="0.01" inputmode="decimal" required>
+                    <input type="text" id="amount" name="amount"
+                           placeholder="e.g. 20,000" inputmode="decimal"
+                           pattern="([0-9]+|[0-9]{1,3}(,[0-9]{3})+)(\.[0-9]{1,2})?"
+                           data-money-input maxlength="15" required>
                 </div>
             </div>
 

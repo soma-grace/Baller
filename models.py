@@ -1,5 +1,5 @@
 
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 
 from sqlalchemy import (
     Column,
@@ -15,6 +15,10 @@ from sqlalchemy import (
 from database import Base
 
 
+def utc_now_naive() -> datetime:
+    return datetime.now(timezone.utc).replace(tzinfo=None)
+
+
 class User(Base):
     __tablename__ = "users"
 
@@ -22,7 +26,7 @@ class User(Base):
     full_name = Column(String(100), nullable=False)
     email = Column(String(255), unique=True, index=True, nullable=False)
     password_hash = Column(String(255), nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=utc_now_naive, nullable=False)
 
 
 class Expense(Base):
@@ -35,7 +39,7 @@ class Expense(Base):
     expense_type = Column(String(20), nullable=False)
     note = Column(Text, nullable=True)
     expense_date = Column(Date, default=date.today, nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=utc_now_naive, nullable=False)
 
 
 class Budget(Base):
@@ -47,4 +51,4 @@ class Budget(Base):
     category = Column(String(100), nullable=True)
     amount = Column(Numeric(12, 2), nullable=False)
     month = Column(Date, nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=utc_now_naive, nullable=False)

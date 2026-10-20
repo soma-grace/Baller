@@ -728,6 +728,7 @@ small {
     display: grid;
     place-items: center;
     position: relative;
+    background: conic-gradient(#e9e9e3 0% 100%);
 }
 
 .donut-illustration::before {
@@ -783,6 +784,15 @@ small {
     flex: 0 0 9px;
     border-radius: 50%;
 }
+
+.legend-swatch-food { background-color: #354a30; }
+.legend-swatch-shopping { background-color: #a9b99e; }
+.legend-swatch-transport { background-color: #d6dfcf; }
+.legend-swatch-entertainment { background-color: #c18a43; }
+.legend-swatch-bills { background-color: #6f8497; }
+.legend-swatch-subscriptions { background-color: #a783a7; }
+.legend-swatch-health { background-color: #cc7f72; }
+.legend-swatch-other { background-color: #8e9186; }
 
 .empty-hint {
     text-align: center;

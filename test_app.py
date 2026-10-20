@@ -54,7 +54,7 @@ class AppInteractionTests(unittest.TestCase):
         data = {
             "budget_type": "overall",
             "category": "",
-            "amount": Decimal("50000"),
+            "amount": "50,000",
             "month": "2026-10",
         }
 
@@ -62,7 +62,7 @@ class AppInteractionTests(unittest.TestCase):
         self.assertEqual(response.status_code, 303)
         self.assertEqual(response.headers["location"], "/budgets?month=2026-10")
 
-        data["amount"] = Decimal("60000")
+        data["amount"] = "60,000"
         response = main.budget_submit(self.request, **data, db=self.db)
         self.assertEqual(response.status_code, 303)
 
@@ -72,14 +72,14 @@ class AppInteractionTests(unittest.TestCase):
 
         page = main.budgets_page(self.request, month="2026-10", db=self.db)
         self.assertEqual(page.status_code, 200)
-        self.assertIn("₦60000.00", page.body.decode())
+        self.assertIn("₦60,000.00", page.body.decode())
 
     def test_category_budget_and_expense_form_are_saved_and_filterable(self):
         budget_response = main.budget_submit(
             self.request,
             budget_type="category",
             category="food",
-            amount=Decimal("12000"),
+            amount="12,000",
             month="2026-10",
             db=self.db,
         )
@@ -87,7 +87,7 @@ class AppInteractionTests(unittest.TestCase):
 
         expense_response = main.add_expense_submit(
             self.request,
-            amount=Decimal("1250.50"),
+            amount="1,250.50",
             category="food",
             expense_type="need",
             spent_at=date(2026, 10, 12),
@@ -108,13 +108,19 @@ class AppInteractionTests(unittest.TestCase):
         )
         self.assertEqual(page.status_code, 200)
         self.assertIn("Lunch at work", page.body.decode())
-        self.assertIn("₦1250.50", page.body.decode())
+        self.assertIn("₦1,250.50", page.body.decode())
 
         budget_page = main.budgets_page(
             self.request, month="2026-10", db=self.db
         )
         self.assertIn("Food", budget_page.body.decode())
-        self.assertIn("₦1250.50 spent", budget_page.body.decode())
+        self.assertIn("₦1,250.50 spent", budget_page.body.decode())
+
+    def test_amount_parser_accepts_valid_thousands_separators(self):
+        self.assertEqual(main.parse_money_amount("20,000"), Decimal("20000"))
+        self.assertEqual(main.parse_money_amount("20,000.50"), Decimal("20000.50"))
+        with self.assertRaises(main.HTTPException):
+            main.parse_money_amount("20,00")
 
     def test_budget_submission_requires_a_signed_in_user(self):
         self.request.scope["session"] = {}
@@ -122,7 +128,7 @@ class AppInteractionTests(unittest.TestCase):
             self.request,
             budget_type="overall",
             category="",
-            amount=Decimal("1000"),
+            amount="1,000",
             month=date.today().strftime("%Y-%m"),
             db=self.db,
         )
@@ -144,8 +150,9 @@ class AppInteractionTests(unittest.TestCase):
         self.db.add(
             Budget(
                 user_id=self.request.scope["session"]["user_id"],
-                budget_type="overall",
-                amount=Decimal("10000"),
+                budget_type="category",
+                category="shopping",
+                amount=Decimal("50000"),
                 month=month,
             )
         )
@@ -153,16 +160,9 @@ class AppInteractionTests(unittest.TestCase):
             [
                 main.Expense(
                     user_id=self.request.scope["session"]["user_id"],
-                    amount=Decimal("3000"),
-                    category="food",
-                    expense_type="need",
-                    expense_date=today,
-                ),
-                main.Expense(
-                    user_id=self.request.scope["session"]["user_id"],
-                    amount=Decimal("2000"),
-                    category="transport",
-                    expense_type="need",
+                    amount=Decimal("20000"),
+                    category="shopping",
+                    expense_type="want",
                     expense_date=today,
                 ),
             ]
@@ -171,9 +171,8 @@ class AppInteractionTests(unittest.TestCase):
 
         page = main.dashboard_page(self.request, db=self.db)
         html = page.body.decode()
-        self.assertIn("conic-gradient(#354a30 0.00% 60.00%", html)
-        self.assertIn("#d6dfcf 60.00% 100.00%", html)
-        self.assertIn("Food", html)
-        self.assertIn("₦3000.00", html)
-        self.assertIn('style="width: 50.0%"', html)
-        self.assertIn("50.0% of your monthly budget used.", html)
+        self.assertIn('"color": "#a9b99e"', html)
+        self.assertIn("Shopping", html)
+        self.assertIn("₦20,000.00 / ₦50,000.00", html)
+        self.assertIn('data-progress="40.0"', html)
+        self.assertIn("40.0% of your category budgets used.", html)

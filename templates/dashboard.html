@@ -19,25 +19,25 @@
 <section class="summary-grid">
     <article class="summary-card">
         <p class="card-label">Spent today</p>
-        <h2>₦{{ "%.2f"|format(spent_today) }}</h2>
+        <h2>₦{{ spent_today|money }}</h2>
         <p class="card-foot">Your spending so far today</p>
     </article>
 
     <article class="summary-card">
         <p class="card-label">Spent this week</p>
-        <h2>₦{{ "%.2f"|format(spent_week) }}</h2>
+        <h2>₦{{ spent_week|money }}</h2>
         <p class="card-foot">Your weekly total</p>
     </article>
 
     <article class="summary-card featured-card">
         <p class="card-label">Spent this month</p>
-        <h2>₦{{ "%.2f"|format(spent_month) }}</h2>
+        <h2>₦{{ spent_month|money }}</h2>
         <p class="card-foot">Your monthly total</p>
     </article>
 
     <article class="summary-card">
         <p class="card-label">Wants this month</p>
-        <h2>₦{{ "%.2f"|format(wants_month) }}</h2>
+        <h2>₦{{ wants_month|money }}</h2>
         <p class="card-foot">Optional spending</p>
     </article>
 </section>
@@ -54,9 +54,9 @@
 
         <div class="chart-placeholder">
             <div class="donut-illustration"
-                 style="background: conic-gradient({% if category_segments %}{% for segment in category_segments %}{{ segment.color }} {{ "%.2f"|format(segment.start) }}% {{ "%.2f"|format(segment.end) }}%{% if not loop.last %}, {% endif %}{% endfor %}{% else %}#e9e9e3 0% 100%{% endif %});">
+                 data-chart-segments='{{ chart_segments|tojson }}'>
                 <div>
-                    <strong>₦{{ "%.2f"|format(spent_month) }}</strong>
+                    <strong>₦{{ spent_month|money }}</strong>
                     <span>Total spent</span>
                 </div>
             </div>
@@ -66,9 +66,9 @@
         <ul class="chart-legend">
             {% for segment in category_segments %}
             <li>
-                <span class="legend-swatch" style="background-color: {{ segment.color }}"></span>
+                <span class="legend-swatch legend-swatch-{{ segment.category }}"></span>
                 <span>{{ segment.name }}</span>
-                <strong>₦{{ "%.2f"|format(segment.amount) }}</strong>
+                <strong>₦{{ segment.amount|money }}</strong>
             </li>
             {% endfor %}
         </ul>
@@ -90,15 +90,15 @@
 
         <div class="budget-overview">
             <div class="budget-numbers">
-                <span>Monthly budget</span>
-                <strong>₦{{ "%.2f"|format(spent_month) }} / ₦{{ "%.2f"|format(monthly_budget) }}</strong>
+                <span>{% if uses_category_budgets %}Budgeted categories{% else %}Monthly budget{% endif %}</span>
+                <strong>₦{{ budgeted_spend|money }} / ₦{{ monthly_budget|money }}</strong>
             </div>
             <div class="progress-track">
-                <div class="progress-fill {% if monthly_budget and spent_month > monthly_budget %}danger{% elif monthly_budget and budget_progress >= 80 %}warning{% endif %}"
-                     style="width: {{ "%.1f"|format(budget_bar_width) }}%"></div>
+                <div class="progress-fill {% if monthly_budget and budgeted_spend > monthly_budget %}danger{% elif monthly_budget and budget_progress >= 80 %}warning{% endif %}"
+                     data-progress="{{ "%.1f"|format(budget_bar_width) }}"></div>
             </div>
             <p class="muted">
-                {% if monthly_budget %}{{ "%.1f"|format(budget_progress) }}% of your monthly budget used.{% else %}Create a budget to track your progress.{% endif %}
+                {% if has_budget %}{{ "%.1f"|format(budget_progress) }}% of your {% if uses_category_budgets %}category budgets{% else %}monthly budget{% endif %} used.{% else %}Create a budget to track your progress.{% endif %}
             </p>
         </div>
 
@@ -133,7 +133,7 @@
                     <td>{{ expense.note or "Expense" }}</td>
                     <td>{{ expense.category|title }}</td>
                     <td>{{ expense.expense_date }}</td>
-                    <td class="amount-cell">₦{{ "%.2f"|format(expense.amount) }}</td>
+                    <td class="amount-cell">₦{{ expense.amount|money }}</td>
                 </tr>
                 {% endfor %}
             </tbody>

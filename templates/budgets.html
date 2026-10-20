@@ -56,8 +56,9 @@
 
         <div class="form-group">
             <label for="budget-amount">Budget amount (₦)</label>
-            <input type="number" id="budget-amount" name="amount"
-                   min="0.01" step="0.01" placeholder="e.g. 50000" required>
+            <input type="text" id="budget-amount" name="amount"
+                   inputmode="decimal" pattern="([0-9]+|[0-9]{1,3}(,[0-9]{3})+)(\.[0-9]{1,2})?"
+                   data-money-input maxlength="15" placeholder="e.g. 50,000" required>
         </div>
 
         <div class="form-group">
@@ -75,19 +76,19 @@
 <section class="summary-grid">
     <article class="summary-card featured-card">
         <p class="card-label">Monthly budget</p>
-        <h2>₦{{ "%.2f"|format(budget_amount) }}</h2>
+        <h2>₦{{ budget_amount|money }}</h2>
         <p class="card-foot">Your total spending limit</p>
     </article>
 
     <article class="summary-card">
         <p class="card-label">Amount spent</p>
-        <h2>₦{{ "%.2f"|format(spent) }}</h2>
+        <h2>₦{{ spent|money }}</h2>
         <p class="card-foot">Recorded this month</p>
     </article>
 
     <article class="summary-card">
         <p class="card-label">Remaining</p>
-        <h2>₦{{ "%.2f"|format(remaining) }}</h2>
+        <h2>₦{{ remaining|money }}</h2>
         <p class="card-foot">Available within your budget</p>
     </article>
 </section>
@@ -106,12 +107,12 @@
     </div>
 
     <div class="budget-numbers">
-        <span>₦{{ "%.2f"|format(spent) }} spent</span>
-        <strong>₦{{ "%.2f"|format(budget_amount) }} budget</strong>
+        <span>₦{{ spent|money }} spent</span>
+        <strong>₦{{ budget_amount|money }} budget</strong>
     </div>
 
     <div class="progress-track">
-        <div class="progress-fill {% if budget_amount and spent > budget_amount %}danger{% endif %}"
+        <div class="progress-fill {% if budget_amount and spent > budget_amount %}danger{% elif budget_amount and spent / budget_amount >= 0.8 %}warning{% endif %}"
              style="width: {{ [((spent / budget_amount * 100) if budget_amount else 0), 100]|min }}%"></div>
     </div>
 
@@ -135,8 +136,8 @@
         {% set category_spent = category_spending.get(budget.category, 0) %}
         <article class="budget-overview">
             <div class="budget-numbers">
-                <span>{{ budget.category|title }} · ₦{{ "%.2f"|format(category_spent) }} spent</span>
-                <strong>₦{{ "%.2f"|format(budget.amount) }}</strong>
+                <span>{{ budget.category|title }} · ₦{{ category_spent|money }} spent</span>
+                <strong>₦{{ budget.amount|money }}</strong>
             </div>
             <div class="progress-track">
                 <div class="progress-fill {% if budget.amount and category_spent > budget.amount %}danger{% elif budget.amount and category_spent / budget.amount >= 0.8 %}warning{% endif %}"

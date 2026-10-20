@@ -1,5 +1,6 @@
 from datetime import date, datetime, timedelta
 from decimal import Decimal
+import re
 
 import bcrypt
 from fastapi import Depends, FastAPI, Form, HTTPException, Request
@@ -45,6 +46,13 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
 
+def money(value: Decimal | int | float | str) -> str:
+    return f"{Decimal(value):,.2f}"
+
+
+templates.env.filters["money"] = money
+
+
 def current_user_id(request: Request, db: Session) -> int | None:
     user_id = request.session.get("user_id")
     if user_id is None:
@@ -64,6 +72,22 @@ def month_bounds(month: date) -> tuple[date, date]:
     else:
         end = start.replace(month=start.month + 1)
     return start, end
+
+
+def parse_money_amount(value: str) -> Decimal:
+    value = value.strip()
+    if not re.fullmatch(r"(?:\d+|\d{1,3}(?:,\d{3})+)(?:\.\d{1,2})?", value):
+        raise HTTPException(
+            status_code=400,
+            detail="Enter a valid amount, using commas only as thousands separators.",
+        )
+    amount = Decimal(value.replace(",", ""))
+    if amount <= 0:
+        raise HTTPException(
+            status_code=400,
+            detail="Amount must be greater than zero.",
+        )
+    return amount
 
 
 @app.get("/")
@@ -244,6 +268,7 @@ def dashboard_page(request: Request, db: Session = Depends(get_db)):
         category_segments.append(
             {
                 "name": category.title(),
+                "category": category,
                 "amount": amount,
                 "color": CATEGORY_COLORS[category],
                 "start": start,
@@ -251,25 +276,52 @@ def dashboard_page(request: Request, db: Session = Depends(get_db)):
             }
         )
 
-    budget = (
+    budgets = (
         db.query(Budget)
         .filter(
             Budget.user_id == user_id,
-            Budget.budget_type == "overall",
             Budget.month == month_start,
         )
-        .first()
+        .all()
         if user_id is not None
-        else None
+        else []
+    )
+    overall_budget = next(
+        (budget for budget in budgets if budget.budget_type == "overall"),
+        None,
+    )
+    category_budgets = [
+        budget for budget in budgets if budget.budget_type == "category"
+    ]
+    if overall_budget:
+        budget_amount = overall_budget.amount
+        budgeted_categories = None
+    else:
+        budget_amount = sum(
+            (budget.amount for budget in category_budgets),
+            Decimal("0"),
+        )
+        budgeted_categories = {budget.category for budget in category_budgets}
+
+    budgeted_spend = (
+        month_total
+        if budgeted_categories is None
+        else sum(
+            (
+                expense.amount
+                for expense in month_expenses
+                if expense.category in budgeted_categories
+            ),
+            Decimal("0"),
+        )
     )
     recent_expenses = sorted(
         expenses,
         key=lambda expense: (expense.expense_date, expense.id),
         reverse=True,
     )[:5]
-    budget_amount = budget.amount if budget else Decimal("0")
     budget_progress = (
-        month_total * 100 / budget_amount
+        budgeted_spend * 100 / budget_amount
         if budget_amount > 0
         else Decimal("0")
     )
@@ -281,11 +333,22 @@ def dashboard_page(request: Request, db: Session = Depends(get_db)):
             "spent_today": today_total,
             "spent_week": week_total,
             "spent_month": month_total,
+            "budgeted_spend": budgeted_spend,
             "wants_month": wants_total,
             "category_segments": category_segments,
+            "chart_segments": [
+                {
+                    "color": segment["color"],
+                    "start": str(segment["start"]),
+                    "end": str(segment["end"]),
+                }
+                for segment in category_segments
+            ],
             "monthly_budget": budget_amount,
             "budget_progress": budget_progress,
             "budget_bar_width": budget_bar_width,
+            "has_budget": overall_budget is not None or bool(category_budgets),
+            "uses_category_budgets": overall_budget is None and bool(category_budgets),
             "recent_expenses": recent_expenses,
         },
     )
@@ -303,7 +366,7 @@ def add_expense_page(request: Request):
 @app.post("/add-expense")
 def add_expense_submit(
     request: Request,
-    amount: Decimal = Form(...),
+    amount: str = Form(...),
     category: str = Form(...),
     expense_type: str = Form(...),
     spent_at: date = Form(...),
@@ -313,8 +376,7 @@ def add_expense_submit(
     user_id = current_user_id(request, db)
     if user_id is None:
         return RedirectResponse(url="/login", status_code=303)
-    if amount <= 0:
-        raise HTTPException(status_code=400, detail="Amount must be greater than zero.")
+    amount_value = parse_money_amount(amount)
     if category not in EXPENSE_CATEGORIES:
         raise HTTPException(status_code=400, detail="Choose a valid expense category.")
     if expense_type not in ("need", "want"):
@@ -322,7 +384,7 @@ def add_expense_submit(
 
     expense = Expense(
         user_id=user_id,
-        amount=amount,
+        amount=amount_value,
         category=category,
         expense_type=expense_type,
         note=note.strip() or None,
@@ -420,7 +482,23 @@ def budgets_page(
         budget for budget in budgets if budget.budget_type == "category"
     ]
     spent = sum((expense.amount for expense in expenses), Decimal("0"))
-    budget_amount = overall_budget.amount if overall_budget else Decimal("0")
+    if overall_budget:
+        budget_amount = overall_budget.amount
+        tracked_spent = spent
+    else:
+        budget_amount = sum(
+            (budget.amount for budget in category_budgets),
+            Decimal("0"),
+        )
+        budgeted_categories = {budget.category for budget in category_budgets}
+        tracked_spent = sum(
+            (
+                expense.amount
+                for expense in expenses
+                if expense.category in budgeted_categories
+            ),
+            Decimal("0"),
+        )
     category_spending = {
         category: sum(
             (
@@ -438,8 +516,8 @@ def budgets_page(
         context={
             "selected_month": selected_month.strftime("%Y-%m"),
             "budget_amount": budget_amount,
-            "spent": spent,
-            "remaining": budget_amount - spent,
+            "spent": tracked_spent,
+            "remaining": budget_amount - tracked_spent,
             "overall_budget": overall_budget,
             "category_budgets": category_budgets,
             "category_spending": category_spending,
@@ -452,7 +530,7 @@ def budget_submit(
     request: Request,
     budget_type: str = Form(...),
     category: str = Form(""),
-    amount: Decimal = Form(...),
+    amount: str = Form(...),
     month: str = Form(...),
     db: Session = Depends(get_db),
 ):
@@ -461,8 +539,7 @@ def budget_submit(
         return RedirectResponse(url="/login", status_code=303)
     if budget_type not in ("overall", "category"):
         raise HTTPException(status_code=400, detail="Choose a valid budget type.")
-    if amount <= 0:
-        raise HTTPException(status_code=400, detail="Amount must be greater than zero.")
+    amount_value = parse_money_amount(amount)
     if budget_type == "category" and category not in EXPENSE_CATEGORIES:
         raise HTTPException(
             status_code=400,
@@ -491,12 +568,12 @@ def budget_submit(
             user_id=user_id,
             budget_type=budget_type,
             category=budget_category,
-            amount=amount,
+            amount=amount_value,
             month=month_start,
         )
         db.add(budget)
     else:
-        budget.amount = amount
+        budget.amount = amount_value
 
     db.commit()
     return RedirectResponse(
