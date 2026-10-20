@@ -1,0 +1,89 @@
+
+{% extends "base.html" %}
+
+{% block title %}Add Expense | Baller{% endblock %}
+
+{% block content %}
+<section class="form-page">
+    <div class="page-heading">
+        <div>
+            <p class="eyebrow">TRACK YOUR BALLING</p>
+            <h1>Add an expense</h1>
+            <p class="muted">Record it now. Understand it later.</p>
+        </div>
+        <a href="/dashboard" class="back-link">← Dashboard</a>
+    </div>
+
+    <div class="panel expense-form-panel">
+        <form action="#" method="post" class="form-stack">
+
+            <div class="form-group">
+                <label for="amount">How much did you spend?</label>
+                <div class="amount-input">
+                    <span>₦</span>
+                    <input type="number" id="amount" name="amount"
+                           placeholder="0.00" min="0.01"
+                           step="0.01" inputmode="decimal" required>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="category">Category</label>
+                <select id="category" name="category" required>
+                    <option value="">Choose a category</option>
+                    <option value="food">Food</option>
+                    <option value="shopping">Shopping</option>
+                    <option value="transport">Transport</option>
+                    <option value="entertainment">Entertainment</option>
+                    <option value="bills">Bills</option>
+                    <option value="subscriptions">Subscriptions</option>
+                    <option value="health">Health</option>
+                    <option value="other">Other</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Was it a need or a want?</label>
+                <div class="choice-grid">
+                    <label class="choice-card">
+                        <input type="radio" name="expense_type"
+                               value="need" required>
+                        <span class="choice-icon">✓</span>
+                        <span>
+                            <strong>A need</strong>
+                            <small>Something essential</small>
+                        </span>
+                    </label>
+
+                    <label class="choice-card">
+                        <input type="radio" name="expense_type"
+                               value="want" required>
+                        <span class="choice-icon">♡</span>
+                        <span>
+                            <strong>A want</strong>
+                            <small>Something optional</small>
+                        </span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="note">What was it for? <span class="optional">(Optional)</span></label>
+                <input type="text" id="note" name="note"
+                       placeholder="e.g. Lunch at work" maxlength="200">
+            </div>
+
+            <div class="form-group">
+                <label for="spent_at">Date of expense</label>
+                <input type="date" id="spent_at" name="spent_at" required>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-full">
+                Save expense
+            </button>
+
+            <a href="/transactions" class="cancel-link">Cancel</a>
+        </form>
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,132 @@
+
+{% extends "base.html" %}
+
+{% block title %}Budgets | Baller{% endblock %}
+
+{% block content %}
+<section class="page-heading">
+    <div>
+        <p class="eyebrow">BALL WITH PURPOSE</p>
+        <h1>Your budgets</h1>
+        <p class="muted">Give your money a plan before it disappears.</p>
+    </div>
+    <button type="button" class="btn btn-primary"
+            onclick="document.getElementById('budget-form').hidden = false">
+        + Set budget
+    </button>
+</section>
+
+<section class="panel budget-form-panel" id="budget-form" hidden>
+    <div class="panel-heading">
+        <div>
+            <h2>Create a budget</h2>
+            <p class="muted">Set a spending limit for the month.</p>
+        </div>
+        <button type="button" class="icon-button"
+                aria-label="Close form"
+                onclick="document.getElementById('budget-form').hidden = true">
+            ×
+        </button>
+    </div>
+
+    <form action="#" method="post" class="form-stack">
+        <div class="form-group">
+            <label for="budget-name">Budget type</label>
+            <select id="budget-name" name="budget_type" required>
+                <option value="overall">Overall monthly budget</option>
+                <option value="category">Category budget</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="budget-category">Category (for category budgets)</label>
+            <select id="budget-category" name="category">
+                <option value="">No category selected</option>
+                <option value="food">Food</option>
+                <option value="shopping">Shopping</option>
+                <option value="transport">Transport</option>
+                <option value="entertainment">Entertainment</option>
+                <option value="bills">Bills</option>
+                <option value="subscriptions">Subscriptions</option>
+                <option value="health">Health</option>
+                <option value="other">Other</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="budget-amount">Budget amount (₦)</label>
+            <input type="number" id="budget-amount" name="amount"
+                   min="0.01" step="0.01" placeholder="e.g. 50000" required>
+        </div>
+
+        <div class="form-group">
+            <label for="budget-month">Month</label>
+            <input type="month" id="budget-month" name="month" required>
+        </div>
+
+        <button type="submit" class="btn btn-primary">
+            Save budget
+        </button>
+    </form>
+</section>
+
+<section class="summary-grid">
+    <article class="summary-card featured-card">
+        <p class="card-label">Monthly budget</p>
+        <h2>₦0.00</h2>
+        <p class="card-foot">Your total spending limit</p>
+    </article>
+
+    <article class="summary-card">
+        <p class="card-label">Amount spent</p>
+        <h2>₦0.00</h2>
+        <p class="card-foot">Recorded this month</p>
+    </article>
+
+    <article class="summary-card">
+        <p class="card-label">Remaining</p>
+        <h2>₦0.00</h2>
+        <p class="card-foot">Available within your budget</p>
+    </article>
+</section>
+
+<section class="panel">
+    <div class="panel-heading">
+        <div>
+            <h2>Overall budget progress</h2>
+            <p class="muted">Your total monthly spending limit</p>
+        </div>
+        <span class="status-pill">Not set</span>
+    </div>
+
+    <div class="budget-numbers">
+        <span>₦0 spent</span>
+        <strong>₦0 budget</strong>
+    </div>
+
+    <div class="progress-track">
+        <div class="progress-fill" style="width: 0%"></div>
+    </div>
+
+    <p class="muted">Create your first budget to start tracking progress.</p>
+</section>
+
+<section class="panel">
+    <div class="panel-heading">
+        <div>
+            <h2>Category budgets</h2>
+            <p class="muted">Set limits for the things you spend on.</p>
+        </div>
+    </div>
+
+    <div class="empty-state">
+        <div class="empty-icon">◎</div>
+        <h3>No category budgets yet</h3>
+        <p>Create category budgets to understand where you can cut back.</p>
+        <button type="button" class="btn btn-secondary"
+                onclick="document.getElementById('budget-form').hidden = false">
+            Create a budget
+        </button>
+    </div>
+</section>
+{% endblock %}

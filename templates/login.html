@@ -1,0 +1,54 @@
+
+{% extends "base.html" %}
+
+{% block title %}Log In | Baller{% endblock %}
+
+{% block content %}
+<section class="auth-wrapper">
+    <div class="auth-card">
+        <a href="/" class="auth-brand">
+            <span class="brand-icon">₦</span> Baller
+        </a>
+
+        <p class="eyebrow">WELCOME BACK BALLER</p>
+        <h1>Good to see you</h1>
+        <p class="muted">
+            Log in to check your Balling and stay on track.
+        </p>
+
+        {% if error %}
+        <p class="form-error">{{ error }}</p>
+        {% endif %}
+
+        <form action="/login" method="post" class="form-stack">
+            <div class="form-group">
+                <label for="email">Email address</label>
+                <input type="email" id="email" name="email"
+                       placeholder="you@example.com"
+                       value="{{ email or '' }}"
+                       autocomplete="email" required>
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password"
+                       placeholder="Enter your password"
+                       autocomplete="current-password" required>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-full">
+                Log in
+            </button>
+        </form>
+
+        <p class="auth-switch">
+            Don't have an account?
+            <a href="/register">Create one</a>
+        </p>
+
+        <p class="privacy-note">
+            Your Balling journey continues here.
+        </p>
+    </div>
+</section>
+{% endblock %}

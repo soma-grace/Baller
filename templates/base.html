@@ -1,0 +1,53 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#f8f8f5">
+    <title>{% block title %}Baller{% endblock %}</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+    {% set page = request.url.path %}
+    {% set auth_page = page in ['/login', '/register'] %}
+
+    {% if not auth_page %}
+    <header class="topbar">
+        <a href="/" class="brand">
+            <span class="brand-icon">₦</span>
+            <span>Baller</span>
+        </a>
+
+        <nav class="main-nav" aria-label="Main navigation">
+            <a href="/dashboard"
+               class="{% if page == '/dashboard' %}active{% endif %}">
+                Dashboard
+            </a>
+            <a href="/transactions"
+               class="{% if page == '/transactions' %}active{% endif %}">
+                Transactions
+            </a>
+            <a href="/budgets"
+               class="{% if page == '/budgets' %}active{% endif %}">
+                Budgets
+            </a>
+        </nav>
+
+        <a href="/add-expense" class="nav-add">+ Add expense</a>
+    </header>
+    {% endif %}
+
+    <main class="{% if auth_page %}auth-page{% else %}page-container{% endif %}">
+        {% block content %}{% endblock %}
+    </main>
+
+    {% if not auth_page %}
+    <footer class="site-footer">
+        <p>Baller &copy; 2026 · Ball with intention.</p>
+    </footer>
+    {% endif %}
+
+</body>
+</html>

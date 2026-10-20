@@ -1,0 +1,102 @@
+
+{% extends "base.html" %}
+
+{% block title %}Transactions | Baller{% endblock %}
+
+{% block content %}
+<section class="page-heading">
+    <div>
+        <p class="eyebrow">YOUR BALLING RECORDS</p>
+        <h1>Transactions</h1>
+        <p class="muted">Every expense tells part of your money story.</p>
+    </div>
+
+    <a href="/add-expense" class="btn btn-primary">+ Add expense</a>
+</section>
+
+<section class="panel">
+    <form action="#" method="get" class="filter-form">
+        <div class="form-group search-field">
+            <label for="search">Search transactions</label>
+            <input type="search" id="search" name="search"
+                   placeholder="Search by note...">
+        </div>
+
+        <div class="form-group">
+            <label for="filter-category">Category</label>
+            <select id="filter-category" name="category">
+                <option value="">All categories</option>
+                <option value="food">Food</option>
+                <option value="shopping">Shopping</option>
+                <option value="transport">Transport</option>
+                <option value="entertainment">Entertainment</option>
+                <option value="bills">Bills</option>
+                <option value="subscriptions">Subscriptions</option>
+                <option value="health">Health</option>
+                <option value="other">Other</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="filter-type">Type</label>
+            <select id="filter-type" name="expense_type">
+                <option value="">Needs and wants</option>
+                <option value="need">Needs</option>
+                <option value="want">Wants</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="start-date">From</label>
+            <input type="date" id="start-date" name="start_date">
+        </div>
+
+        <div class="form-group">
+            <label for="end-date">To</label>
+            <input type="date" id="end-date" name="end_date">
+        </div>
+
+        <button type="submit" class="btn btn-secondary">Apply filters</button>
+        <a href="/transactions" class="reset-link">Reset</a>
+    </form>
+</section>
+
+<section class="panel transaction-panel">
+    <div class="panel-heading">
+        <div>
+            <h2>All transactions</h2>
+            <p class="muted">Your recorded expenses will appear here.</p>
+        </div>
+        <span class="period-label">Expense history</span>
+    </div>
+
+    <div class="table-scroll">
+        <table class="transaction-table">
+            <thead>
+                <tr>
+                    <th>Expense</th>
+                    <th>Category</th>
+                    <th>Date</th>
+                    <th>Type</th>
+                    <th class="amount-cell">Amount</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td colspan="6">
+                        <div class="table-empty">
+                            <div class="empty-icon">₦</div>
+                            <h3>No expenses to show</h3>
+                            <p>Add an expense to begin your transaction history.</p>
+                            <a href="/add-expense" class="text-link">
+                                Add an expense →
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}

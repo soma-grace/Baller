@@ -1,0 +1,117 @@
+
+{% extends "base.html" %}
+
+{% block title %}Dashboard | Baller{% endblock %}
+
+{% block content %}
+<section class="page-heading">
+    <div>
+        <p class="eyebrow">YOUR FINANCIAL OVERVIEW</p>
+        <h1>Dashboard</h1>
+        <p class="muted">Small decisions. Better money habits.</p>
+    </div>
+
+    <a href="/add-expense" class="btn btn-primary">
+        + Add expense
+    </a>
+</section>
+
+<section class="summary-grid">
+    <article class="summary-card">
+        <p class="card-label">Spent today</p>
+        <h2>₦0.00</h2>
+        <p class="card-foot">Your spending so far today</p>
+    </article>
+
+    <article class="summary-card">
+        <p class="card-label">Spent this week</p>
+        <h2>₦0.00</h2>
+        <p class="card-foot">Your weekly total</p>
+    </article>
+
+    <article class="summary-card featured-card">
+        <p class="card-label">Spent this month</p>
+        <h2>₦0.00</h2>
+        <p class="card-foot">Your monthly total</p>
+    </article>
+
+    <article class="summary-card">
+        <p class="card-label">Wants this month</p>
+        <h2>₦0.00</h2>
+        <p class="card-foot">Optional spending</p>
+    </article>
+</section>
+
+<section class="dashboard-grid">
+    <article class="panel">
+        <div class="panel-heading">
+            <div>
+                <h2>Spending by category</h2>
+                <p class="muted">Where your money goes</p>
+            </div>
+            <span class="period-label">This month</span>
+        </div>
+
+        <div class="chart-placeholder">
+            <div class="donut-illustration">
+                <div>
+                    <strong>₦0</strong>
+                    <span>Total spent</span>
+                </div>
+            </div>
+        </div>
+
+        <p class="empty-hint">
+            Your category breakdown will appear here once you record expenses.
+        </p>
+    </article>
+
+    <article class="panel">
+        <div class="panel-heading">
+            <div>
+                <h2>Budget progress</h2>
+                <p class="muted">Keep your spending on track</p>
+            </div>
+            <a href="/budgets" class="text-link">View budgets</a>
+        </div>
+
+        <div class="budget-overview">
+            <div class="budget-numbers">
+                <span>Monthly budget</span>
+                <strong>₦0 / ₦0</strong>
+            </div>
+            <div class="progress-track">
+                <div class="progress-fill" style="width: 0%"></div>
+            </div>
+            <p class="muted">Create a budget to track your progress.</p>
+        </div>
+
+        <div class="insight-box">
+            <span class="insight-icon">✦</span>
+            <div>
+                <h3>Your next step</h3>
+                <p>Add your first expense to start discovering your habits.</p>
+            </div>
+        </div>
+    </article>
+</section>
+
+<section class="panel recent-panel">
+    <div class="panel-heading">
+        <div>
+            <h2>Recent transactions</h2>
+            <p class="muted">Your latest spending activity</p>
+        </div>
+        <a href="/transactions" class="text-link">View all</a>
+    </div>
+
+    <div class="empty-state">
+        <div class="empty-icon">₦</div>
+        <h3>No transactions yet</h3>
+        <p>Your expenses will appear here when you add them.</p>
+        <a href="/add-expense" class="btn btn-secondary">
+            Add your first expense
+        </a>
+    </div>
+</section>
+{% endblock %}
