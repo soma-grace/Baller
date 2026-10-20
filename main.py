@@ -24,6 +24,16 @@ EXPENSE_CATEGORIES = (
     "health",
     "other",
 )
+CATEGORY_COLORS = {
+    "food": "#354a30",
+    "shopping": "#a9b99e",
+    "transport": "#d6dfcf",
+    "entertainment": "#c18a43",
+    "bills": "#6f8497",
+    "subscriptions": "#a783a7",
+    "health": "#cc7f72",
+    "other": "#8e9186",
+}
 
 app.add_middleware(
     SessionMiddleware,
@@ -208,6 +218,39 @@ def dashboard_page(request: Request, db: Session = Depends(get_db)):
         ),
         Decimal("0"),
     )
+    category_totals = {
+        category: sum(
+            (
+                expense.amount
+                for expense in month_expenses
+                if expense.category == category
+            ),
+            Decimal("0"),
+        )
+        for category in EXPENSE_CATEGORIES
+    }
+    category_segments = []
+    cumulative = Decimal("0")
+    for category, amount in category_totals.items():
+        if amount <= 0:
+            continue
+        start = (cumulative * 100 / month_total).quantize(Decimal("0.01"))
+        cumulative += amount
+        end = (
+            Decimal("100")
+            if cumulative == month_total
+            else (cumulative * 100 / month_total).quantize(Decimal("0.01"))
+        )
+        category_segments.append(
+            {
+                "name": category.title(),
+                "amount": amount,
+                "color": CATEGORY_COLORS[category],
+                "start": start,
+                "end": end,
+            }
+        )
+
     budget = (
         db.query(Budget)
         .filter(
@@ -224,6 +267,13 @@ def dashboard_page(request: Request, db: Session = Depends(get_db)):
         key=lambda expense: (expense.expense_date, expense.id),
         reverse=True,
     )[:5]
+    budget_amount = budget.amount if budget else Decimal("0")
+    budget_progress = (
+        month_total * 100 / budget_amount
+        if budget_amount > 0
+        else Decimal("0")
+    )
+    budget_bar_width = min(budget_progress, Decimal("100"))
     return templates.TemplateResponse(
         request=request,
         name="dashboard.html",
@@ -232,7 +282,10 @@ def dashboard_page(request: Request, db: Session = Depends(get_db)):
             "spent_week": week_total,
             "spent_month": month_total,
             "wants_month": wants_total,
-            "monthly_budget": budget.amount if budget else Decimal("0"),
+            "category_segments": category_segments,
+            "monthly_budget": budget_amount,
+            "budget_progress": budget_progress,
+            "budget_bar_width": budget_bar_width,
             "recent_expenses": recent_expenses,
         },
     )

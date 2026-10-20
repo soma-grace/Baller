@@ -137,3 +137,43 @@ class AppInteractionTests(unittest.TestCase):
         }
         self.assertIn(("/budgets", "POST"), routes)
         self.assertIn(("/add-expense", "POST"), routes)
+
+    def test_dashboard_renders_live_donut_and_budget_progress(self):
+        today = date.today()
+        month = today.replace(day=1)
+        self.db.add(
+            Budget(
+                user_id=self.request.scope["session"]["user_id"],
+                budget_type="overall",
+                amount=Decimal("10000"),
+                month=month,
+            )
+        )
+        self.db.add_all(
+            [
+                main.Expense(
+                    user_id=self.request.scope["session"]["user_id"],
+                    amount=Decimal("3000"),
+                    category="food",
+                    expense_type="need",
+                    expense_date=today,
+                ),
+                main.Expense(
+                    user_id=self.request.scope["session"]["user_id"],
+                    amount=Decimal("2000"),
+                    category="transport",
+                    expense_type="need",
+                    expense_date=today,
+                ),
+            ]
+        )
+        self.db.commit()
+
+        page = main.dashboard_page(self.request, db=self.db)
+        html = page.body.decode()
+        self.assertIn("conic-gradient(#354a30 0.00% 60.00%", html)
+        self.assertIn("#d6dfcf 60.00% 100.00%", html)
+        self.assertIn("Food", html)
+        self.assertIn("₦3000.00", html)
+        self.assertIn('style="width: 50.0%"', html)
+        self.assertIn("50.0% of your monthly budget used.", html)

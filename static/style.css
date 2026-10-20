@@ -727,12 +727,6 @@ small {
     border-radius: 50%;
     display: grid;
     place-items: center;
-    background: conic-gradient(
-        #354a30 0deg 90deg,
-        #a9b99e 90deg 180deg,
-        #d6dfcf 180deg 270deg,
-        #e9e9e3 270deg 360deg
-    );
     position: relative;
 }
 
@@ -759,6 +753,35 @@ small {
 .donut-illustration span {
     color: var(--muted);
     font-size: 11px;
+}
+
+.chart-legend {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px 16px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.chart-legend li {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    min-width: 0;
+    font-size: 12px;
+}
+
+.chart-legend li strong {
+    margin-left: auto;
+    white-space: nowrap;
+}
+
+.legend-swatch {
+    width: 9px;
+    height: 9px;
+    flex: 0 0 9px;
+    border-radius: 50%;
 }
 
 .empty-hint {

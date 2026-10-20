@@ -53,17 +53,30 @@
         </div>
 
         <div class="chart-placeholder">
-            <div class="donut-illustration">
+            <div class="donut-illustration"
+                 style="background: conic-gradient({% if category_segments %}{% for segment in category_segments %}{{ segment.color }} {{ "%.2f"|format(segment.start) }}% {{ "%.2f"|format(segment.end) }}%{% if not loop.last %}, {% endif %}{% endfor %}{% else %}#e9e9e3 0% 100%{% endif %});">
                 <div>
-                    <strong>₦0</strong>
+                    <strong>₦{{ "%.2f"|format(spent_month) }}</strong>
                     <span>Total spent</span>
                 </div>
             </div>
         </div>
 
+        {% if category_segments %}
+        <ul class="chart-legend">
+            {% for segment in category_segments %}
+            <li>
+                <span class="legend-swatch" style="background-color: {{ segment.color }}"></span>
+                <span>{{ segment.name }}</span>
+                <strong>₦{{ "%.2f"|format(segment.amount) }}</strong>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
         <p class="empty-hint">
             Your category breakdown will appear here once you record expenses.
         </p>
+        {% endif %}
     </article>
 
     <article class="panel">
@@ -81,11 +94,11 @@
                 <strong>₦{{ "%.2f"|format(spent_month) }} / ₦{{ "%.2f"|format(monthly_budget) }}</strong>
             </div>
             <div class="progress-track">
-                <div class="progress-fill {% if monthly_budget and spent_month > monthly_budget %}danger{% endif %}"
-                     style="width: {{ [((spent_month / monthly_budget * 100) if monthly_budget else 0), 100]|min }}%"></div>
+                <div class="progress-fill {% if monthly_budget and spent_month > monthly_budget %}danger{% elif monthly_budget and budget_progress >= 80 %}warning{% endif %}"
+                     style="width: {{ "%.1f"|format(budget_bar_width) }}%"></div>
             </div>
             <p class="muted">
-                {% if monthly_budget %}Your monthly spending progress.{% else %}Create a budget to track your progress.{% endif %}
+                {% if monthly_budget %}{{ "%.1f"|format(budget_progress) }}% of your monthly budget used.{% else %}Create a budget to track your progress.{% endif %}
             </p>
         </div>
 
