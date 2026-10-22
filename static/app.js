@@ -8,6 +8,41 @@ document.querySelectorAll("[data-chart-segments]").forEach((chart) => {
     }
 });
 
+const expenseModal = document.querySelector("#expense-modal");
+if (expenseModal instanceof HTMLDialogElement) {
+    document.querySelectorAll('a[href="/add-expense"]').forEach((link) => {
+        link.addEventListener("click", (event) => {
+            event.preventDefault();
+            expenseModal.showModal();
+        });
+    });
+    expenseModal.querySelectorAll("[data-close-expense]").forEach((button) => {
+        button.addEventListener("click", () => expenseModal.close());
+    });
+    expenseModal.addEventListener("click", (event) => {
+        if (event.target === expenseModal) expenseModal.close();
+    });
+}
+
+const expenseCategory = document.querySelector('select#category[name="category"]');
+const expenseNote = document.querySelector("#note");
+if (expenseCategory && expenseNote instanceof HTMLInputElement) {
+    const labelText = document.querySelector("#note-label-text");
+    const optionalText = document.querySelector("#note-optional");
+    const syncOther = () => {
+        const isOther = expenseCategory.value === "other";
+        expenseNote.required = isOther;
+        if (labelText) labelText.textContent = isOther ? "What kind of expense was it?" : "What was it for?";
+        if (optionalText) optionalText.hidden = isOther;
+        expenseNote.placeholder = isOther
+            ? "e.g. Gift for a friend"
+            : expenseNote.dataset.defaultPlaceholder || "";
+        if (isOther) expenseNote.focus();
+    };
+    expenseCategory.addEventListener("change", syncOther);
+    syncOther();
+}
+
 const donut = document.querySelector("#donut");
 const donutDateRow = document.querySelector("#donut-date-row");
 const donutDate = document.querySelector("#donut-date");

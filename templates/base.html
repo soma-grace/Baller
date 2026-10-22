@@ -11,7 +11,7 @@
 <body>
 
     {% set page = request.url.path %}
-    {% set auth_page = page in ['/login', '/register'] %}
+    {% set auth_page = page in ['/login', '/register', '/verify-email', '/resend-verification'] %}
 
     {% if not auth_page %}
     <header class="topbar">

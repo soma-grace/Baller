@@ -154,4 +154,16 @@
     </div>
     {% endif %}
 </section>
+
+<dialog id="expense-modal" class="expense-modal" aria-labelledby="expense-modal-title">
+    <div class="expense-modal-head">
+        <div>
+            <p class="eyebrow">TRACK YOUR BALLING</p>
+            <h2 id="expense-modal-title">Add an expense</h2>
+        </div>
+        <button type="button" class="expense-modal-close" data-close-expense aria-label="Close">&times;</button>
+    </div>
+    {% set next = "dashboard" %}
+    {% include "_expense_form.html" %}
+</dialog>
 {% endblock %}

@@ -1,0 +1,48 @@
+
+{% extends "base.html" %}
+
+{% block title %}Verify Email | Baller{% endblock %}
+
+{% block content %}
+<section class="auth-wrapper">
+    <div class="auth-card">
+        <a href="/" class="auth-brand">
+            <span class="brand-icon">₦</span> Baller
+        </a>
+
+        <p class="eyebrow">ONE LAST STEP</p>
+        <h1>Verify your email</h1>
+        <p class="muted">
+            We sent a 6-digit code to <strong>{{ email }}</strong>.
+            Enter it below to activate your account.
+        </p>
+
+        {% if error %}
+        <p class="form-error">{{ error }}</p>
+        {% endif %}
+        {% if info %}
+        <p class="muted">{{ info }}</p>
+        {% endif %}
+
+        <form action="/verify-email" method="post" class="form-stack">
+            <div class="form-group">
+                <label for="code">Verification code</label>
+                <input type="text" id="code" name="code" inputmode="numeric"
+                       pattern="[0-9]{6}" maxlength="6" placeholder="123456"
+                       autocomplete="one-time-code" required>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-full">
+                Verify email
+            </button>
+        </form>
+
+        <form action="/resend-verification" method="post" class="auth-switch">
+            Didn't get it?
+            <button type="submit" class="text-link cancel-link">Resend code</button>
+        </form>
+
+        <p class="auth-switch"><a href="/register">Use a different email</a></p>
+    </div>
+</section>
+{% endblock %}
