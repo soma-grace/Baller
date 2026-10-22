@@ -1,3 +1,6 @@
+import os
+from pathlib import Path
+from dotenv import load_dotenv
 from datetime import date, datetime, timedelta
 from decimal import Decimal
 import re
@@ -36,9 +39,12 @@ CATEGORY_COLORS = {
     "other": "#8e9186",
 }
 
+env_path = Path(__file__).resolve().parent / ".env"
+load_dotenv(dotenv_path=env_path)
+
 app.add_middleware(
     SessionMiddleware,
-    secret_key="local-development-secret-change-before-launch"
+    secret_key=os.getenv("SECRET_KEY")
 )
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -347,7 +353,8 @@ def add_expense_submit(
         )
     amount_value = parse_money_amount(amount)
     if category not in EXPENSE_CATEGORIES:
-        raise HTTPException(status_code=400, detail="Choose a valid expense category.")
+        raise HTTPException(
+            status_code=400, detail="Choose a valid expense category.")
     if expense_type not in ("need", "want"):
         raise HTTPException(status_code=400, detail="Choose need or want.")
 
@@ -400,11 +407,13 @@ def transactions_page(
     if search.strip():
         query = query.filter(Expense.note.ilike(f"%{search.strip()}%"))
     if category and category not in EXPENSE_CATEGORIES:
-        raise HTTPException(status_code=400, detail="Choose a valid category filter.")
+        raise HTTPException(
+            status_code=400, detail="Choose a valid category filter.")
     if category:
         query = query.filter(Expense.category == category)
     if expense_type and expense_type not in ("need", "want"):
-        raise HTTPException(status_code=400, detail="Choose a valid type filter.")
+        raise HTTPException(
+            status_code=400, detail="Choose a valid type filter.")
     if expense_type:
         query = query.filter(Expense.expense_type == expense_type)
     if (
