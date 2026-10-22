@@ -59,6 +59,15 @@ def money(value: Decimal | int | float | str) -> str:
 templates.env.filters["money"] = money
 
 
+def naira(value: Decimal | int | float | str) -> str:
+    amount = Decimal(value)
+    sign = "-" if amount < 0 else ""
+    return f"{sign}₦{abs(amount):,.2f}"
+
+
+templates.env.filters["naira"] = naira
+
+
 def current_user_id(request: Request, db: Session) -> int | None:
     user_id = request.session.get("user_id")
     if user_id is None:

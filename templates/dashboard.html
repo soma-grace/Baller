@@ -19,19 +19,19 @@
 <section class="summary-grid">
     <article class="summary-card">
         <p class="card-label">Spent today</p>
-        <h2>₦{{ spent_today|money }}</h2>
+        <h2>{{ spent_today|naira }}</h2>
         <p class="card-foot">Your spending so far today</p>
     </article>
 
     <article class="summary-card">
         <p class="card-label">Spent this week</p>
-        <h2>₦{{ spent_week|money }}</h2>
+        <h2>{{ spent_week|naira }}</h2>
         <p class="card-foot">Your weekly total</p>
     </article>
 
     <article class="summary-card featured-card">
         <p class="card-label">Spent this month</p>
-        <h2>₦{{ spent_month|money }}</h2>
+        <h2>{{ spent_month|naira }}</h2>
         <p class="card-foot">Your monthly total</p>
     </article>
 
@@ -53,9 +53,9 @@
                  data-chart-segments='{{ chart_segments|tojson }}'
                  data-daily='{{ daily_data|tojson }}'
                  data-today="{{ today_iso }}"
-                 data-month-total="₦{{ spent_month|money }}">
+                 data-month-total="{{ spent_month|naira }}">
                 <div>
-                    <strong id="donut-total">₦{{ spent_month|money }}</strong>
+                    <strong id="donut-total">{{ spent_month|naira }}</strong>
                     <span id="donut-caption">Total spent</span>
                 </div>
             </div>
@@ -72,7 +72,7 @@
             <li>
                 <span class="legend-swatch legend-swatch-{{ segment.category }}"></span>
                 <span>{{ segment.name }}</span>
-                <strong>₦{{ segment.amount|money }}</strong>
+                <strong>{{ segment.amount|naira }}</strong>
             </li>
             {% endfor %}
         </ul>
@@ -95,7 +95,7 @@
         <div class="budget-overview">
             <div class="budget-numbers">
                 <span>Monthly budget</span>
-                <strong>₦{{ budgeted_spend|money }} / ₦{{ monthly_budget|money }}</strong>
+                <strong>{{ budgeted_spend|naira }} / {{ monthly_budget|naira }}</strong>
             </div>
             <div class="progress-track">
                 <div class="progress-fill {% if monthly_budget and budgeted_spend > monthly_budget %}danger{% elif monthly_budget and budget_progress >= 80 %}warning{% endif %}"
@@ -137,7 +137,7 @@
                     <td>{{ expense.note or "Expense" }}</td>
                     <td>{{ expense.category|title }}</td>
                     <td>{{ expense.expense_date }}</td>
-                    <td class="amount-cell">₦{{ expense.amount|money }}</td>
+                    <td class="amount-cell">{{ expense.amount|naira }}</td>
                 </tr>
                 {% endfor %}
             </tbody>

@@ -85,7 +85,7 @@
                     <td>{{ expense.category|title }}</td>
                     <td>{{ expense.expense_date }}</td>
                     <td>{{ expense.expense_type|title }}</td>
-                    <td class="amount-cell">₦{{ expense.amount|money }}</td>
+                    <td class="amount-cell">{{ expense.amount|naira }}</td>
                 </tr>
                 {% else %}
                 <tr>

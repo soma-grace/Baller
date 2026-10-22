@@ -70,19 +70,19 @@
 <section class="summary-grid">
     <article class="summary-card featured-card">
         <p class="card-label">Overall monthly budget</p>
-        <h2>₦{{ budget_amount|money }}</h2>
+        <h2>{{ budget_amount|naira }}</h2>
         <p class="card-foot">Your total spending limit</p>
     </article>
 
     <article class="summary-card">
         <p class="card-label">Amount spent this month</p>
-        <h2>₦{{ spent|money }}</h2>
+        <h2>{{ spent|naira }}</h2>
         <p class="card-foot">Recorded this month</p>
     </article>
 
     <article class="summary-card">
         <p class="card-label">Remaining</p>
-        <h2>₦{{ remaining|money }}</h2>
+        <h2>{{ remaining|naira }}</h2>
         <p class="card-foot">Available within your overall budget</p>
     </article>
 </section>
@@ -112,8 +112,8 @@
 
     {% if overall_budget %}
     <div class="budget-numbers">
-        <span>₦{{ spent|money }} spent</span>
-        <strong>₦{{ budget_amount|money }} budget</strong>
+        <span>{{ spent|naira }} spent</span>
+        <strong>{{ budget_amount|naira }} budget</strong>
     </div>
 
     <div class="progress-track">
