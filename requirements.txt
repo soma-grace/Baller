@@ -6,3 +6,4 @@ itsdangerous
 python-dotenv
 sqlalchemy
 psycopg[binary]
+bcrypt
