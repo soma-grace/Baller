@@ -731,6 +731,35 @@ small {
     background: conic-gradient(#e9e9e3 0% 100%);
 }
 
+.donut-illustration {
+    cursor: pointer;
+    transition: transform 0.15s ease;
+}
+
+.donut-illustration:hover,
+.donut-illustration:focus-visible {
+    transform: scale(1.03);
+}
+
+.donut-date {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 16px;
+    font-size: 13px;
+}
+
+.donut-date[hidden] {
+    display: none;
+}
+
+.donut-date button {
+    background: none;
+    border: 0;
+    cursor: pointer;
+}
+
 .donut-illustration::before {
     content: "";
     position: absolute;

@@ -48,13 +48,22 @@
         </div>
 
         <div class="chart-placeholder">
-            <div class="donut-illustration"
-                 data-chart-segments='{{ chart_segments|tojson }}'>
+            <div class="donut-illustration" id="donut" role="button" tabindex="0"
+                 aria-label="Tap to view spending for a day"
+                 data-chart-segments='{{ chart_segments|tojson }}'
+                 data-daily='{{ daily_data|tojson }}'
+                 data-today="{{ today_iso }}"
+                 data-month-total="₦{{ spent_month|money }}">
                 <div>
-                    <strong>₦{{ spent_month|money }}</strong>
-                    <span>Total spent</span>
+                    <strong id="donut-total">₦{{ spent_month|money }}</strong>
+                    <span id="donut-caption">Total spent</span>
                 </div>
             </div>
+        </div>
+        <div class="donut-date" id="donut-date-row" hidden>
+            <label for="donut-date">Date</label>
+            <input type="date" id="donut-date" value="{{ today_iso }}">
+            <button type="button" class="text-link" id="donut-reset">Back to month</button>
         </div>
 
         {% if category_segments %}

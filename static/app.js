@@ -8,6 +8,60 @@ document.querySelectorAll("[data-chart-segments]").forEach((chart) => {
     }
 });
 
+const donut = document.querySelector("#donut");
+const donutDateRow = document.querySelector("#donut-date-row");
+const donutDate = document.querySelector("#donut-date");
+if (donut instanceof HTMLElement && donutDateRow && donutDate instanceof HTMLInputElement) {
+    const monthSegments = JSON.parse(donut.dataset.chartSegments || "[]");
+    const daily = JSON.parse(donut.dataset.daily || "{}");
+    const total = document.querySelector("#donut-total");
+    const caption = document.querySelector("#donut-caption");
+    const naira = (value) => `₦${Number(value).toLocaleString("en-NG", { maximumFractionDigits: 2 })}`;
+    const paint = (segments) => {
+        donut.style.background = segments.length
+            ? `conic-gradient(${segments.map(({ color, start, end }) => `${color} ${start}% ${end}%`).join(", ")})`
+            : "";
+    };
+    const showDay = () => {
+        const items = daily[donutDate.value] || [];
+        const sum = items.reduce((acc, item) => acc + Number(item.amount), 0);
+        let cumulative = 0;
+        paint(items.map((item) => {
+            const start = (cumulative * 100) / sum;
+            cumulative += Number(item.amount);
+            return { color: item.color, start, end: (cumulative * 100) / sum };
+        }));
+        total.textContent = naira(sum);
+        caption.textContent = donutDate.value === donut.dataset.today
+            ? "Spent today"
+            : `Spent on ${donutDate.value}`;
+    };
+    const openDay = () => {
+        donutDateRow.hidden = false;
+        donutDate.max = donut.dataset.today;
+        if (!donutDate.value) donutDate.value = donut.dataset.today;
+        showDay();
+    };
+    donut.addEventListener("click", openDay);
+    donut.addEventListener("keydown", (event) => {
+        if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            openDay();
+        }
+    });
+    donutDate.addEventListener("change", () => {
+        if (!donutDate.value) donutDate.value = donut.dataset.today;
+        showDay();
+    });
+    document.querySelector("#donut-reset")?.addEventListener("click", () => {
+        donutDateRow.hidden = true;
+        donutDate.value = donut.dataset.today;
+        paint(monthSegments);
+        total.textContent = donut.dataset.monthTotal;
+        caption.textContent = "Total spent";
+    });
+}
+
 document.querySelectorAll("[data-progress]").forEach((progress) => {
     const percentage = Number(progress.dataset.progress);
     if (Number.isFinite(percentage)) {

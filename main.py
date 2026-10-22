@@ -274,6 +274,23 @@ def dashboard_page(request: Request, db: Session = Depends(get_db)):
             }
         )
 
+    daily_totals: dict[str, dict[str, Decimal]] = {}
+    for expense in expenses:
+        day = daily_totals.setdefault(expense.expense_date.isoformat(), {})
+        day[expense.category] = day.get(expense.category, Decimal("0")) + expense.amount
+    daily_data = {
+        day: [
+            {
+                "name": category.title(),
+                "color": CATEGORY_COLORS[category],
+                "amount": str(amount),
+            }
+            for category, amount in categories.items()
+            if category in CATEGORY_COLORS and amount > 0
+        ]
+        for day, categories in daily_totals.items()
+    }
+
     overall_budget = (
         db.query(Budget)
         .filter(
@@ -308,6 +325,8 @@ def dashboard_page(request: Request, db: Session = Depends(get_db)):
             "budgeted_spend": budgeted_spend,
             "has_overall_budget": overall_budget is not None,
             "category_segments": category_segments,
+            "daily_data": daily_data,
+            "today_iso": today.isoformat(),
             "chart_segments": [
                 {
                     "color": segment["color"],
