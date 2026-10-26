@@ -1,43 +1,52 @@
+
 import logging
 import os
-import smtplib
-from email.message import EmailMessage
+import resend
 
 logger = logging.getLogger("baller.mailer")
 
 
 def send_verification_email(to_email: str, name: str, code: str) -> bool:
-    host = os.getenv("SMTP_HOST")
-    if not host:
-        # No SMTP configured: print the code so local development still works.
-        logger.warning("SMTP not configured. Verification code for %s: %s", to_email, code)
-        print(f"[Baller] Verification code for {to_email}: {code}")
-        return True
+    api_key = os.getenv("RESEND_API_KEY")
 
-    sender = os.getenv("SMTP_FROM") or os.getenv("SMTP_USER") or "no-reply@baller.app"
-    message = EmailMessage()
-    message["Subject"] = "Your Baller verification code"
-    message["From"] = sender
-    message["To"] = to_email
-    message.set_content(
-        f"Hi {name},\n\n"
-        f"Your Baller verification code is {code}.\n"
-        "It expires in 15 minutes. If you didn't sign up, ignore this email.\n"
-    )
+    if not api_key:
+        logger.error("RESEND_API_KEY is not configured.")
+        return False
+
+    # Use a verified sender address configured in Render.
+    sender = os.getenv("EMAIL_FROM", "onboarding@resend.dev")
+
+    resend.api_key = api_key
+
+    message = {
+        "from": sender,
+        "to": [to_email],
+        "subject": "Your Baller verification code",
+        "text": (
+            f"Hi {name},\n\n"
+            f"Your Baller verification code is {code}.\n"
+            "It expires in 15 minutes. "
+            "If you didn't sign up, you can ignore this email.\n\n"
+            "The Baller Team"
+        ),
+        "html": f"""
+        <div style="font-family: Arial, sans-serif; max-width: 500px; margin: auto;">
+            <h2>Welcome to Baller!</h2>
+            <p>Hi {name},</p>
+            <p>Use this code to verify your email address:</p>
+            <h1 style="letter-spacing: 8px;">{code}</h1>
+            <p>This code expires in 15 minutes.</p>
+            <p>If you didn't sign up, you can ignore this email.</p>
+            <p>The Baller Team</p>
+        </div>
+        """,
+    }
 
     try:
-        port = int(os.getenv("SMTP_PORT", "587"))
-        if port == 465:
-            server = smtplib.SMTP_SSL(host, port, timeout=15)
-        else:
-            server = smtplib.SMTP(host, port, timeout=15)
-            server.starttls()
-        with server:
-            user = os.getenv("SMTP_USER")
-            if user:
-                server.login(user, os.getenv("SMTP_PASSWORD", ""))
-            server.send_message(message)
-        return True
+        result = resend.Emails.send(message)
+        logger.info("Verification email accepted by Resend for %s", to_email)
+        return bool(result)
+
     except Exception:
         logger.exception("Failed to send verification email to %s", to_email)
         return False
