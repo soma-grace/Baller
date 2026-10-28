@@ -2,7 +2,6 @@
 from datetime import date, datetime, timezone
 
 from sqlalchemy import (
-    Boolean,
     Column,
     Integer,
     String,
@@ -27,11 +26,6 @@ class User(Base):
     full_name = Column(String(100), nullable=False)
     email = Column(String(255), unique=True, index=True, nullable=False)
     password_hash = Column(String(255), nullable=False)
-    email_verified = Column(Boolean, default=False, nullable=False)
-    verification_code_hash = Column(String(255), nullable=True)
-    verification_expires_at = Column(DateTime, nullable=True)
-    verification_attempts = Column(Integer, default=0, nullable=False)
-    verification_sent_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=utc_now_naive, nullable=False)
 
 

@@ -4,46 +4,21 @@ from dotenv import load_dotenv
 from datetime import date, datetime, timedelta
 from decimal import Decimal
 import re
-import secrets
 import bcrypt
 from fastapi import Depends, FastAPI, Form, HTTPException, Request
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from sqlalchemy import inspect, text
 from sqlalchemy.orm import Session
 from starlette.middleware.sessions import SessionMiddleware
 from database import Base, engine, get_db
-from mailer import send_verification_email
-from models import Budget, Expense, User, utc_now_naive
+from models import Budget, Expense, User
 
 Base.metadata.create_all(bind=engine)
 
 
-def ensure_verification_columns() -> None:
-    """Add email verification columns to an existing users table."""
-    existing = {col["name"] for col in inspect(engine).get_columns("users")}
-    statements = {
-        "email_verified": "ALTER TABLE users ADD COLUMN email_verified BOOLEAN NOT NULL DEFAULT TRUE",
-        "verification_code_hash": "ALTER TABLE users ADD COLUMN verification_code_hash VARCHAR(255)",
-        "verification_expires_at": "ALTER TABLE users ADD COLUMN verification_expires_at TIMESTAMP",
-        "verification_attempts": "ALTER TABLE users ADD COLUMN verification_attempts INTEGER NOT NULL DEFAULT 0",
-        "verification_sent_at": "ALTER TABLE users ADD COLUMN verification_sent_at TIMESTAMP",
-    }
-    with engine.begin() as conn:
-        for column, statement in statements.items():
-            if column not in existing:
-                conn.execute(text(statement))
-
-
-# Accounts created before verification existed are treated as verified.
-ensure_verification_columns()
-
 app = FastAPI(title="Baller")
 EMAIL_PATTERN = re.compile(r"[^@\s]+@[^@\s]+\.[^@\s]{2,}")
-VERIFICATION_TTL = timedelta(minutes=15)
-RESEND_COOLDOWN = timedelta(seconds=60)
-MAX_VERIFICATION_ATTEMPTS = 5
 EXPENSE_CATEGORIES = (
     "food",
     "shopping",
@@ -180,7 +155,7 @@ def register_submit(
         return render_error("Passwords do not match.")
 
     existing_user = db.query(User).filter(User.email == email).first()
-    if existing_user and existing_user.email_verified:
+    if existing_user:
         return render_error("An account with that email already exists.")
 
     if not EMAIL_PATTERN.fullmatch(email):
@@ -190,121 +165,14 @@ def register_submit(
         password.encode("utf-8"), bcrypt.gensalt()
     ).decode("utf-8")
 
-    if existing_user:
-        # Unverified signup for this email: let the new attempt replace it.
-        user = existing_user
-        user.full_name = name
-        user.password_hash = password_hash
-    else:
-        user = User(full_name=name, email=email,
-                    password_hash=password_hash, email_verified=False)
-        db.add(user)
+    user = User(full_name=name, email=email, password_hash=password_hash)
+    db.add(user)
     db.commit()
     db.refresh(user)
-
-    if not issue_verification_code(db, user):
-        return render_error(
-            "We couldn't send the verification email. Please try again.")
-
-    request.session.clear()
-    request.session["pending_verification_id"] = user.id
-
-    return RedirectResponse(url="/verify-email", status_code=303)
-
-
-def issue_verification_code(db: Session, user: User) -> bool:
-    code = f"{secrets.randbelow(1_000_000):06d}"
-    user.verification_code_hash = bcrypt.hashpw(
-        code.encode("utf-8"), bcrypt.gensalt()
-    ).decode("utf-8")
-    now = utc_now_naive()
-    user.verification_expires_at = now + VERIFICATION_TTL
-    user.verification_sent_at = now
-    user.verification_attempts = 0
-    db.commit()
-    return send_verification_email(user.email, user.full_name, code)
-
-
-def pending_user(request: Request, db: Session) -> User | None:
-    user_id = request.session.get("pending_verification_id")
-    user = db.get(User, user_id) if user_id is not None else None
-    if user is None or user.email_verified:
-        request.session.pop("pending_verification_id", None)
-        return None
-    return user
-
-
-def render_verify(request: Request, user: User, error: str = "",
-                  info: str = "", status_code: int = 200):
-    return templates.TemplateResponse(
-        request=request,
-        name="verify_email.html",
-        context={"email": user.email, "error": error, "info": info},
-        status_code=status_code,
-    )
-
-
-@app.get("/verify-email")
-def verify_email_page(request: Request, db: Session = Depends(get_db)):
-    user = pending_user(request, db)
-    if user is None:
-        return RedirectResponse(url="/login", status_code=303)
-    return render_verify(request, user)
-
-
-@app.post("/verify-email")
-def verify_email_submit(
-    request: Request,
-    code: str = Form(...),
-    db: Session = Depends(get_db),
-):
-    user = pending_user(request, db)
-    if user is None:
-        return RedirectResponse(url="/login", status_code=303)
-
-    if (
-        not user.verification_code_hash
-        or not user.verification_expires_at
-        or user.verification_expires_at < utc_now_naive()
-    ):
-        return render_verify(
-            request, user, "That code has expired. Request a new one.", status_code=400)
-    if user.verification_attempts >= MAX_VERIFICATION_ATTEMPTS:
-        return render_verify(
-            request, user, "Too many attempts. Request a new code.", status_code=400)
-
-    user.verification_attempts += 1
-    if not bcrypt.checkpw(
-        code.strip().encode("utf-8"), user.verification_code_hash.encode("utf-8")
-    ):
-        db.commit()
-        return render_verify(request, user, "Incorrect code.", status_code=400)
-
-    user.email_verified = True
-    user.verification_code_hash = None
-    user.verification_expires_at = None
-    db.commit()
 
     request.session.clear()
     request.session["user_id"] = user.id
     return RedirectResponse(url="/dashboard", status_code=303)
-
-
-@app.post("/resend-verification")
-def resend_verification(request: Request, db: Session = Depends(get_db)):
-    user = pending_user(request, db)
-    if user is None:
-        return RedirectResponse(url="/login", status_code=303)
-
-    sent_at = user.verification_sent_at
-    if sent_at and utc_now_naive() - sent_at < RESEND_COOLDOWN:
-        return render_verify(
-            request, user, "Please wait a minute before requesting another code.", status_code=429)
-
-    if not issue_verification_code(db, user):
-        return render_verify(
-            request, user, "We couldn't send the email. Please try again.", status_code=500)
-    return render_verify(request, user, info="A new code has been sent.")
 
 
 @app.get("/login")
@@ -343,14 +211,7 @@ def login_submit(
     ):
         return render_error("Incorrect email or password.")
 
-    if not user.email_verified:
-        if not issue_verification_code(db, user):
-            return render_error(
-                "We couldn't send the verification email. Please try again.")
-        request.session.clear()
-        request.session["pending_verification_id"] = user.id
-        return RedirectResponse(url="/verify-email", status_code=303)
-
+    request.session.clear()
     request.session["user_id"] = user.id
 
     return RedirectResponse(url="/dashboard", status_code=303)
